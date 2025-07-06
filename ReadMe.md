@@ -1,90 +1,86 @@
-# README
-
-# DevOps Assignment: Host Docker ROR Application with Nginx in AWS using IaC
-
-## Introduction
-
-This assignment aims to demonstrate the process of deploying a Dockerized Ruby on Rails application with Nginx in AWS with Loadbalancer and RDS using IaC.
-
-### Guideline for the assignment submission
-
-1. Fork this repo into your GitHub account. Setup the build process from the source code. Build process should generate a Docker image and upload it to AWS ECR.
-2. Create a new folder named "infrastructure" in the root of the project and push your IaC code under this folder.
-3. Prepare a Terraform/CloudFormation/CDK script to provision the scalable infrastructure in AWS ECS/EKS using this ECR image. You need to use ELB to distribute the traffic between servers. All the resources should be hosted in private subnet except load balancer.
-4. The web application will integrate with database and S3. So you may need to create a RDS instance (Postgres) and S3 bucket and use them as ENV variable in ECS. Required ENV names will be mentioned in Github repo’s README. Application should integrate with S3 using IAM role authentication, not AccessKey and SecretKey. Application should integrate with RDS using database credentials (Host, DB name, Username and Password).
-5. It should also contain a ReadMe file with cleardetails about how to use and create the Infrastructure with this IaC code.
-6. Prepare an architecture diagram, deployment steps, and any other relevant information in the same folder.
-7. Share a GitHub repository to Github account “Mallowtechdev” and send an email to HR team (hr@mallow-tech.com) about the completion along with Github repository link and branch details.
+![Deploy to AWS ECS](https://github.com/Prasath224/DevOps-Interview-ROR-App/actions/workflows/docker.yml/badge.svg)
 
 
-### Iac Structure
+# Ruby on Rails App Deployment on AWS ECS using Terraform
 
-    ...
-    ├── infrastructure
-    │   ├──  ( # IaC Code files )
-    │   │   ...
-    │   │   ...
-    │   ├──  ReadMe
-    │   ├──  Architecture diagram
-    │   ├──  Other documentation files
-    │   ...              
-    ...
+This project demonstrates a complete Infrastructure as Code (IaC) setup for deploying a Dockerized Ruby on Rails application on AWS ECS Fargate using Terraform. The infrastructure includes VPC, ECS, ALB, RDS, S3, and IAM roles following best practices.
 
+---
 
-### Prerequisites
+## Components
+- **Terraform Modules**:
+  - `vpc`: Custom VPC with public and private subnets
+  - `alb`: Application Load Balancer in public subnets
+  - `ecs`: ECS Fargate Cluster, Task Definition, and Service
+  - `rds`: PostgreSQL 13.3 in private subnets
+  - `s3`: Bucket for file uploads
+  - `iam`: IAM role for ECS task to access S3
+  - `ecr`: Repository for Docker image
 
-1. AWS Account with appropriate permissions.
-2. RDS Postgres 13.3 Database ( update the credentials in the below mentioned Environment variables)
-3. LoadBalancer  ( update the loadbalancer endpoint in the environment variable)
-4. Docker installed in your local machine.
-5. Your preferred IaC tool ( Terraform, CDK, CloudFormation)
-6. Other local tools if required.
+---
 
-### Version details:
-
-* Ruby version - `3.2.2`
-* Rails version - `7.0.5`
-* Database - `Postgresql - 13.3`
-
-### Docker conatiner details
-
-* Rails container running in port 3000
-* Nginx container running in port 80
-* You can use the container alias name "rails_app" to for the nginx to send request to rails container
+## Architecture Diagram
+User
+  │
+  ▼
+Application Load Balancer (Public Subnet)
+  │
+  ▼
+ECS Fargate Service (Private Subnet)
+  ├──▶ RDS (PostgreSQL)
+  └──▶ S3 Bucket
 
 
-### Docker Folder Structure
+---
 
-    ...
-    ├── docker
-    │   ├── app
-    │   │   ├── Dockerfile         # Rails container dockerfile
-    │   │   └── entrypoint.sh      # Rails container entrypoint
-    │   └── nginx
-    │       ├── default.conf       # Nginx config file
-    │       └── Dockerfile         # Nginx container dockerfile
-    │                   
-    ├── docker-compose.yml         # docker-compose file
-    ...
+## Deployment Instructions
 
-### Environment variable for Ruby container
+## Prerequisites
+- AWS CLI configured with appropriate IAM permissions
+- Terraform CLI v1.6.6 or higher
+- Docker
+- GitHub Actions Secrets:
+  - `AWS_ACCESS_KEY_ID`
+  - `AWS_SECRET_ACCESS_KEY`
 
-```env
-RDS_DB_NAME="postgres database name"
-RDS_USERNAME="postgres db user name"
-RDS_PASSWORD="postgres db password"
-RDS_HOSTNAME="postgres db hostname"
-RDS_PORT="postgres db port"
-S3_BUCKET_NAME="s3 bucket name"
-S3_REGION_NAME="s3 region name"
-LB_ENDPOINT="loadbalancer endpoint without http"
-```
+1. Fork the Repository:
+git clone https://github.com/Prasath224/DevOps-Interview-ROR-App.git
+cd DevOps-Interview-ROR-App
 
-### Environment variable for Nginx container
+2. Setup GitHub Actions Workflow (already included):
+Builds Docker image
+Pushes to ECR
+Triggers Terraform deployment on push to main
 
-```env
-nil
-```
+3. Define Inputs (terraform.tfvars):
 
-### Note
-This README is a guideline and should be adjusted based on your specific setup and requirements.
+region           = "us-east-1"
+s3_bucket_name   = "ror-app-upload-YOURNAME"
+ecr_repo_name    = "ror-app"
+db_name          = "appdb"
+db_username      = "appuser"
+db_password      = "AppSecurePass123"
+app_image_url    = "<ECR_IMAGE_URL>"
+
+Replace <ECR_IMAGE_URL> with the actual ECR URL printed from GitHub Actions output or ECR console.
+
+4. Initialize Terraform:
+cd terraform
+terraform init
+
+5. Apply Infrastructure:
+terraform apply -auto-approve
+
+6. Output:
+After apply, you’ll get:
+
+Load Balancer DNS to test the Rails app
+ECS Cluster & Service details
+
+## Testing the App
+Once deployed, access: http://<alb_dns_name>
+The Rails application should load successfully.
+
+## Clean Up:
+terraform destroy -auto-approve
+
